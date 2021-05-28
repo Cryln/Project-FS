@@ -22,6 +22,94 @@ public class SuperBlock {
     private int DataSegOffset = iNodeSegOffset+lenOfINodeSeg; //数据区的起始地址
     private int lenOfDataSeg = partitionSize -DataSegOffset; // 数据区长度
 
+    public SuperBlock getNextSuperBlock() {
+        return nextSuperBlock;
+    }
+
+    public void setNextSuperBlock(SuperBlock nextSuperBlock) {
+        this.nextSuperBlock = nextSuperBlock;
+    }
+
+    public String getDevice() {
+        return device;
+    }
+
+    public void setDevice(String device) {
+        this.device = device;
+    }
+
+    public int getPartitionSize() {
+        return partitionSize;
+    }
+
+    public void setPartitionSize(int partitionSize) {
+        this.partitionSize = partitionSize;
+    }
+
+    public int getiNodeSize() {
+        return iNodeSize;
+    }
+
+    public void setiNodeSize(int iNodeSize) {
+        this.iNodeSize = iNodeSize;
+    }
+
+    public int getBlockSize() {
+        return blockSize;
+    }
+
+    public void setBlockSize(int blockSize) {
+        this.blockSize = blockSize;
+    }
+
+    public int getMaxBytes() {
+        return maxBytes;
+    }
+
+    public void setMaxBytes(int maxBytes) {
+        this.maxBytes = maxBytes;
+    }
+
+    public int getMagic() {
+        return magic;
+    }
+
+    public void setMagic(int magic) {
+        this.magic = magic;
+    }
+
+    public int getiNodeSegOffset() {
+        return iNodeSegOffset;
+    }
+
+    public void setiNodeSegOffset(int iNodeSegOffset) {
+        this.iNodeSegOffset = iNodeSegOffset;
+    }
+
+    public int getLenOfINodeSeg() {
+        return lenOfINodeSeg;
+    }
+
+    public void setLenOfINodeSeg(int lenOfINodeSeg) {
+        this.lenOfINodeSeg = lenOfINodeSeg;
+    }
+
+    public int getDataSegOffset() {
+        return DataSegOffset;
+    }
+
+    public void setDataSegOffset(int dataSegOffset) {
+        DataSegOffset = dataSegOffset;
+    }
+
+    public int getLenOfDataSeg() {
+        return lenOfDataSeg;
+    }
+
+    public void setLenOfDataSeg(int lenOfDataSeg) {
+        this.lenOfDataSeg = lenOfDataSeg;
+    }
+
     public void load() throws FileNotFoundException {
         ByteIO byteIO = new ByteIO("D:\\Codes\\java\\Project-FS\\src\\cn\\geralt\\util\\mydisk.vhd");
 
