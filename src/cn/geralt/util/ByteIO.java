@@ -38,7 +38,7 @@ public class ByteIO {
     }
 
     public static void main(String[] args) throws IOException {
-        ByteIO byteIO = new ByteIO("D:\\Codes\\java\\Project-FS\\src\\cn\\geralt\\util\\mydisk.vhd");
+        ByteIO byteIO = new ByteIO("src/cn/geralt/util/mydisk.vhd");
 //        ByteIO byteIO2 = new ByteIO("D:\\Codes\\java\\Project-FS\\src\\cn\\geralt\\util\\JOS.vhd");
         byteIO.input("hello world",4096);
         byte[] bytes = byteIO.output(4096,11);
@@ -47,5 +47,11 @@ public class ByteIO {
         }
         System.out.println();
         System.out.println(new String(bytes));
+    }
+    public static int byteArrayToInt(byte[] b) {
+        return   b[3] & 0xFF |
+                (b[2] & 0xFF) << 8 |
+                (b[1] & 0xFF) << 16 |
+                (b[0] & 0xFF) << 24;
     }
 }
