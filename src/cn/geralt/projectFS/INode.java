@@ -5,9 +5,7 @@ package cn.geralt.projectFS;
 import cn.geralt.util.ByteIO;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class INode {
     private SuperBlock SBHandler;
@@ -16,18 +14,42 @@ public class INode {
     private byte type;
     private byte status;
     private int rawFileLen;
-//    static int iNodeAreaOffset = 4096;
-//    static int iNodeLen = 256;
-    public INode(int iNodeNum) throws IOException {
-        this.iNodeNum = iNodeNum;
-        init(FileSystem.getbytes(SBHandler.getiNodeSegOffset()+iNodeNum* SBHandler.getiNodeSize()
-                ,SBHandler.getiNodeSize()));
+
+    private int fileNameLen;
+    private String fileName;
+
+    public String getFileName() {
+        return fileName;
     }
-    private void init(byte[] bytes){
-        this.type = bytes[0];
-        this.status = bytes[1];
-        this.firstBlock = ByteIO.byteArrayToInt(Arrays.copyOfRange(bytes,2,2+4));
-        this.rawFileLen = ByteIO.byteArrayToInt(Arrays.copyOfRange(bytes,2+4,2+4+4));
+
+    //    static int iNodeAreaOffset = 4096;
+//    static int iNodeLen = 256;
+    public INode(SuperBlock superBlock ,int iNodeNum) throws IOException {
+        this.iNodeNum = iNodeNum;
+        this.SBHandler = superBlock;
+        initialize();
+    }
+
+
+//    public static INode getInstance(int iNodeNum){
+//
+//    }
+
+    private void initialize() throws IOException {
+        byte[] bytes = FileSystem.getbytes(SBHandler.getiNodeSegOffset()+iNodeNum* SBHandler.getiNodeSize()
+                ,SBHandler.getiNodeSize());
+
+        this.type = bytes[0]; //first byte for type
+        this.status = bytes[1]; //2nd byte for status
+        //next 4 bytes for number of first block
+        this.firstBlock = ByteIO.byteArrayToInt(bytes,2);
+        //next 4 bytes for length of raw file // x byte
+        this.rawFileLen = ByteIO.byteArrayToInt(bytes,6);
+        //9th byte for length of filename
+        this.fileNameLen = (int)bytes[10];
+        byte[] buffer = new byte[this.fileNameLen];
+        System.arraycopy(bytes,11,buffer,0,this.fileNameLen);
+        this.fileName = new String(buffer);
     }
     public byte[] getFile() throws IOException {
         byte[] buffer = new byte[rawFileLen];
