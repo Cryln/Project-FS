@@ -51,7 +51,14 @@ public class INode {
         System.arraycopy(bytes,11,buffer,0,this.fileNameLen);
         this.fileName = new String(buffer);
     }
-    public byte[] getFile() throws IOException {
+
+    private int[][] getOffSet(int off,int len){
+
+
+        return null ;
+    }
+
+    public byte[] read() throws IOException {
         byte[] buffer = new byte[rawFileLen];
         int restBytes = rawFileLen;
         int nextBlockNum = this.firstBlock;
@@ -69,5 +76,10 @@ public class INode {
             restBytes -= restBytes;
         }
         return buffer;
+    }
+
+    public void write(byte[] bytes,int off){
+        //TODO: first
+        this.rawFileLen = off+bytes.length;
     }
 }

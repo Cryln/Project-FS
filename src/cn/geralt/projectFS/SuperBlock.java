@@ -31,6 +31,9 @@ public class SuperBlock {
     private int dataSegOffset = iNodeSegOffset+lenOfINodeSeg; //数据区的起始地址
     private int lenOfDataSeg = partitionSize - dataSegOffset; // 数据区长度
 
+    private int iNodeMapOffset;
+    private int blockMapOffset;
+
     public SuperBlock(FileSystem FSHandler) {
         this.FSHandler = FSHandler;
     }
@@ -145,6 +148,8 @@ public class SuperBlock {
         dataSegOffset = byteIO.nextInt();
         blockAmount = byteIO.nextInt();
         rootINode = byteIO.nextInt();
+        iNodeMapOffset = byteIO.nextInt();
+        blockMapOffset = byteIO.nextInt();
 
     }
 
@@ -159,10 +164,24 @@ public class SuperBlock {
         byteIO.writeInt(ints[5]); //iNodeSegOffset 4096
         byteIO.writeInt(ints[6]); //iNodeAmount 4096
         byteIO.writeInt(ints[7]); //dataSegOffset 1052672
-        byteIO.writeInt(ints[8]); //blockAmount 3839
+        byteIO.writeInt(ints[8]); //blockAmount 3837
         byteIO.writeInt(ints[9]); //rootINode 0
+        byteIO.writeInt(ints[10]); //iNode map offset 48
+        byteIO.writeInt(ints[11]); //block map offset 48+512=560
 
-
+        byteIO.setPos(ints[10]);
+        for (int i = 0; i < 512; i++) {
+            byteIO.writeBytes(new byte[]{(byte)(0x00)});
+        }
+        byteIO.setPos(ints[11]);
+        for (int i = 0; i < 512; i++) {
+            byteIO.writeBytes(new byte[]{(byte)(0x00)});
+        }
+//        System.out.println();
+        byteIO.setPos(ints[10]);
+        byteIO.writeBytes(new byte[]{-128});
+        byteIO.setPos(ints[11]);
+        byteIO.writeBytes(new byte[]{-128});
 
         byteIO.setPos(ints[1]+ints[3]*ints[9]); //root iNode offset
         byte[] data = new byte[11];
@@ -187,6 +206,17 @@ public class SuperBlock {
     }
     public void save() throws IOException {
 
+    }
+
+    public byte[] getINodeMap() throws IOException {
+        String dir = FSHandler.getVHDDir();
+        ByteIO byteIO = new ByteIO(dir);
+        return byteIO.output(iNodeMapOffset,4096/8);
+    }
+    public byte[] getBlockMap() throws IOException {
+        String dir = FSHandler.getVHDDir();
+        ByteIO byteIO = new ByteIO(dir);
+        return byteIO.output(blockMapOffset,4096/8);
     }
 
     public static void main(String[] args) throws IOException {

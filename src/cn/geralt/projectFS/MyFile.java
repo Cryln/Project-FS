@@ -28,7 +28,19 @@ public class MyFile {
 //        byteIO.input(dEntry.getiNode().getFile(),0);
 //        return fileDir;
 //    }
-    public void write(){
+    private MyFile(DEntry dEntry,int fd){
+        this.dEntry = dEntry;
+        this.fd = fd;
+    }
+    public static MyFile getInstance(DEntry dEntry,int fd){
+        return new MyFile(dEntry,fd);
+    }
 
+    public byte[] read() throws IOException {
+        return dEntry.read();
+    }
+
+    public void write(byte[] bytes,int off){
+        dEntry.write(bytes,off);
     }
 }

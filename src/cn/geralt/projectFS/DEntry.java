@@ -46,14 +46,18 @@ public class DEntry {
         this.iNode = iNode;
         this.fileName = this.iNode.getFileName();
     }
-//    public byte[] openFile() throws IOException {
-//        //TODO: open file
+    public byte[] read() throws IOException {
+        //TODO: open file
 //        rawFile = iNode.getFile();
-//        return rawFile;
-//    }
+        return iNode.read();
+    }
+
+    public void write(byte[] bytes,int off){
+        iNode.write(bytes,off);
+    }
     public void openDir() throws IOException {
         //将当前目录的子项目加载未Dentry，扩展文件树
-        byte[] rawFile = iNode.getFile();
+        byte[] rawFile = iNode.read();
         int numOfItems =  ByteIO.byteArrayToInt(Arrays.copyOfRange(rawFile,0,4));
         for (int i = 0; i < numOfItems; i++) {
             int iNodeNum = ByteIO.byteArrayToInt(Arrays.copyOfRange(rawFile,4*(i+1),4*(i+2)));
@@ -89,5 +93,18 @@ public class DEntry {
                 return true;
         }
         return false;
+    }
+
+    public static DEntry getInstance(String dir,DEntry cur){
+        String[] path = dir.split("/");
+        for (String s : path) {
+            if(cur.isChildExist(s)){
+                cur = cur.getChild(s);
+            }
+            else{
+                return null;
+            }
+        }
+        return cur;
     }
 }

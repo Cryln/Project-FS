@@ -87,14 +87,6 @@ public class ByteIO {
     }
 
     public static void main(String[] args) throws IOException {
-        ByteIO byteIO = new ByteIO("src/cn/geralt/util/mydisk.vhd");
-//        ByteIO byteIO2 = new ByteIO("D:\\Codes\\java\\Project-FS\\src\\cn\\geralt\\util\\JOS.vhd");
-        byteIO.input("hello world",4096);
-        byte[] bytes = byteIO.output(4096,11);
-        for (byte aByte : bytes) {
-            System.out.println(String.format("%X",aByte));
-        }
-        System.out.println();
-        System.out.println(new String(bytes));
+
     }
 }
