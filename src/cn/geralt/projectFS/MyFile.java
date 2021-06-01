@@ -40,7 +40,7 @@ public class MyFile {
         return dEntry.read();
     }
 
-    public void write(byte[] bytes,int off){
-        dEntry.write(bytes,off);
+    public int[] write(byte[] bytes,int off,int[] additons) throws IOException {
+        return dEntry.write(bytes,off,additons);
     }
 }

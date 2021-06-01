@@ -52,8 +52,8 @@ public class DEntry {
         return iNode.read();
     }
 
-    public void write(byte[] bytes,int off){
-        iNode.write(bytes,off);
+    public int[] write(byte[] bytes,int off,int[] additions) throws IOException {
+        return iNode.write(bytes,off,additions);
     }
     public void openDir() throws IOException {
         //将当前目录的子项目加载未Dentry，扩展文件树

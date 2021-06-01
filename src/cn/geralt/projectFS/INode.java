@@ -39,7 +39,7 @@ public class INode {
         byte[] bytes = FileSystem.getbytes(SBHandler.getiNodeSegOffset()+iNodeNum* SBHandler.getiNodeSize()
                 ,SBHandler.getiNodeSize());
 
-        this.type = bytes[0]; //first byte for type
+        this.type = bytes[0]; //first byte for type; 0-> dir;1->file
         this.status = bytes[1]; //2nd byte for status
         //next 4 bytes for number of first block
         this.firstBlock = ByteIO.byteArrayToInt(bytes,2);
@@ -78,8 +78,104 @@ public class INode {
         return buffer;
     }
 
-    public void write(byte[] bytes,int off){
+    private int needBlockAmount(int len){
+        int a = len/(SBHandler.getBlockSize()-4);
+        int b = len%(SBHandler.getBlockSize()-4);
+        if(b>0) a++;
+        return a;
+    }
+
+    private int fileOff2PhysicOff(int off) throws IOException {
+        int a = off/(SBHandler.getBlockSize()-4);
+        int b = off%(SBHandler.getBlockSize()-4);
+        if(b>0)a++;
+        int physicOff = firstBlock* SBHandler.getBlockSize()+SBHandler.getDataSegOffset();
+        for (int i = 0; i < a; i++) {
+            physicOff = ByteIO.byteArrayToInt(FileSystem.getbytes(physicOff+ SBHandler.getBlockSize()-4,4));
+        }
+        return physicOff+b;
+    }
+
+    public int[] write(byte[] bytes,int off,int[] additions) throws IOException {
         //TODO: first
-        this.rawFileLen = off+bytes.length;
+        int[] ans;
+        int newLen = off+bytes.length;
+        int rawBlockNum = needBlockAmount(rawFileLen);
+        int newBlockNum = needBlockAmount(newLen);
+
+        ByteIO byteIO = new ByteIO("src/cn/geralt/util/mydisk.vhd");
+
+        if(rawBlockNum == newBlockNum){
+            //TODO:
+
+            int[][] periods = getOffSet(off,bytes.length);
+            int pos = 0;
+            for (int[] period : periods) {
+                byteIO.input(Arrays.copyOfRange(bytes,pos,pos+period[1]),period[0]);
+                pos += period[1];
+            }
+
+            ans = new int[1];
+            ans[0] = 1;
+            return ans;
+        }
+        else if(rawBlockNum<newBlockNum){
+            if(additions==null){
+                ans = new int[2];
+                ans[0] = 0;
+                ans[1] = newBlockNum-rawBlockNum;
+                return ans;
+            }else{
+                if(newBlockNum-rawBlockNum<additions.length){
+                    ans = new int[1];
+                    ans[0] = -1;
+                    System.out.println("分配的block 不足");
+                    return ans;
+                }
+                ans = new int[newBlockNum-rawBlockNum+1];
+
+                int blockIndex = rawBlockNum;
+                int nextBlockPtrAddr = fileOff2PhysicOff(blockIndex* (SBHandler.getBlockSize()-4)-1)+1;
+                int index = 0;
+                for (int i = 0; i < additions.length; i++) {
+                    byteIO.setPos(nextBlockPtrAddr);
+                    byteIO.writeInt(additions[i]);
+                    blockIndex ++;
+                    nextBlockPtrAddr = fileOff2PhysicOff(blockIndex* (SBHandler.getBlockSize()-4)-1)+1;
+                    ans[i+1] = additions[i];
+                }
+//
+//                for (int additon : additions) {
+//                    byteIO.setPos(nextBlockPtrAddr);
+//                    byteIO.writeInt(additon);
+//                    blockIndex ++;
+//                    nextBlockPtrAddr = fileOff2PhysicOff(blockIndex* (SBHandler.getBlockSize()-4)-1)+1;
+//                    ans[index+1] = additon;
+//                    index++;
+//                }
+                this.rawFileLen = newLen;
+                write(bytes,off,null);
+                ans[0]=2;
+                return ans;
+            }
+        }
+        else{
+            ans = new int[1+rawBlockNum-newBlockNum];
+            int blockIndex = rawBlockNum;
+            int blockPtrAddr = fileOff2PhysicOff((blockIndex-1)* (SBHandler.getBlockSize()-4)-1)+1;
+            for (int i = 0; i < rawBlockNum - newBlockNum; i++) {
+                byteIO.setPos(blockPtrAddr);
+                ans[i+1] = byteIO.nextInt();
+                byteIO.setPos(blockPtrAddr);
+                byteIO.writeInt(0);
+                blockIndex--;
+                blockPtrAddr = fileOff2PhysicOff((blockIndex-1)* (SBHandler.getBlockSize()-4)-1)+1;
+            }
+            this.rawFileLen = newLen;
+            write(bytes,off,null);
+            ans[0]=3;
+            return ans;
+        }
+
     }
 }

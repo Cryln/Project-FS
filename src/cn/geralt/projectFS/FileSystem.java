@@ -2,6 +2,7 @@ package cn.geralt.projectFS;
 
 import cn.geralt.util.ByteIO;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,20 +57,28 @@ public class FileSystem {
         root = new DEntry(this,null,superBlock.getRootINode(),getINode(superBlock.getRootINode()));
         iNodeMap = superBlock.getINodeMap();
         blockMap = superBlock.getBlockMap();
+
+        current = root;
         System.out.println("root:"+root.getFileName());
         return true;
     }
 
-    public int getUnusedNum(byte[] bytes){
+    public int[] getUnusedNum(byte[] bytes,int amount){
+        int[] nums = new int[amount];
         int num = 0;
+        int index = 0;
         for (byte aByte : bytes) {
             for (int i = 0; i < 8 ; i++) {
-                if((aByte&(byte)0b10000000) == 0) return num;
+                if((aByte&(byte)0b10000000) == 0){
+                    nums[index] = num;
+                    index++;
+                    if(index==amount) return nums;
+                }
                 num++;
                 aByte = (byte)(aByte<<1);
             }
         }
-        return -1;
+        return null;
     }
 
     public void setMapBit(byte[] bytes,int pos,boolean bit){
@@ -139,8 +148,30 @@ public class FileSystem {
         return len;
     }
 
-    public void write(){
+    public void write(int fd,byte[] data,int off) throws IOException {
+        MyFile file = files.get(fd);
+        int[] res;
+        res = file.write(data,off,null);
 
+        while(true){
+            switch (res[0]) {
+                case 0://块不足
+                    res = file.write(data, off, getUnusedNum(blockMap, res[1]));
+                    break;
+                case 1://成功
+                    return;
+                case 2://分配成功，返回实际使用的block;
+                    for (int i = 1; i < res.length; i++) {
+                        setMapBit(blockMap, res[i], true);
+                    }
+                    return;
+                case 3://有剩余block，返回
+                    for (int i = 1; i < res.length; i++) {
+                        setMapBit(blockMap, res[i], false);
+                    }
+                    return;
+            }
+        }
     }
 
     private void format() throws IOException {
@@ -158,8 +189,21 @@ public class FileSystem {
         return byteIO.output(offset,len);
     }
 
-    public void newDir(){
+    public void newDir(String dirName,DEntry parent) throws IOException {
+        ByteIO byteIO = new ByteIO(VHDDir);
+        byte[] name = dirName.getBytes();
+        byte[] data = new byte[11+name.length];
+        data[0] = 0x0; //type
+        data[1] = 0x0; //status
+        System.arraycopy(ByteIO.intToByteArray(0),0,data,2,4); //first block num
+        System.arraycopy(ByteIO.intToByteArray(1),0,data,6,4); //rawFileLen
+        data[10] = (byte)name.length; //filename len
+        System.arraycopy(dirName.getBytes(),0,data,11,dirName.length());
 
+        int[] inode =  getUnusedNum(iNodeMap,1);
+        byteIO.setPos(superBlock.getiNodeSegOffset()+inode[0]*superBlock.getiNodeSize());
+        byteIO.writeBytes(data);
+        setMapBit(iNodeMap,inode[0],true);
     }
 
     public static void main(String[] args) throws IOException {
