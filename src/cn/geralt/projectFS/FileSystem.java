@@ -4,8 +4,10 @@ import cn.geralt.util.ByteIO;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 
 public class FileSystem {
     private String VHDDir;
@@ -16,9 +18,18 @@ public class FileSystem {
     private Map<Integer,MyFile> files = new HashMap<>();
     private byte[] iNodeMap;
     private byte[] blockMap;
+    private Stack<DEntry> path = new Stack<>();
 
     public String getVHDDir() {
         return VHDDir;
+    }
+
+    public DEntry getCurrent() {
+        return current;
+    }
+
+    public void setCurrent(DEntry current) {
+        this.current = current;
     }
 
     public SuperBlock getSuperBlock() {
@@ -55,6 +66,7 @@ public class FileSystem {
         //TODO: 1.initialize the super block
 
         root = new DEntry(this,null,superBlock.getRootINode(),getINode(superBlock.getRootINode()));
+
         iNodeMap = superBlock.getINodeMap();
         blockMap = superBlock.getBlockMap();
 
@@ -109,11 +121,6 @@ public class FileSystem {
 //        return true;
 //    }
 
-    public void createFile(String absDir){
-        //TODO
-
-    }
-
     private int getFD(){
         for (int i = 0; i < files.size()+1; i++) {
             if(!files.containsKey(i)){
@@ -123,8 +130,8 @@ public class FileSystem {
         return -1;
     }
 
-    public int open(String dir,DEntry cur){
-        DEntry temp = DEntry.getInstance(dir,cur);
+    public int open(String dir){
+        DEntry temp = dir2DEntry(dir);
         if(temp==null){
             return -1;
         }
@@ -189,25 +196,62 @@ public class FileSystem {
         return byteIO.output(offset,len);
     }
 
-    public void newDir(String dirName,DEntry parent) throws IOException {
-        ByteIO byteIO = new ByteIO(VHDDir);
-        byte[] name = dirName.getBytes();
-        byte[] data = new byte[11+name.length];
-        data[0] = 0x0; //type
-        data[1] = 0x0; //status
-        System.arraycopy(ByteIO.intToByteArray(0),0,data,2,4); //first block num
-        System.arraycopy(ByteIO.intToByteArray(1),0,data,6,4); //rawFileLen
-        data[10] = (byte)name.length; //filename len
-        System.arraycopy(dirName.getBytes(),0,data,11,dirName.length());
+    public DEntry dir2DEntry(String dir){
+        String[] path = dir.strip().split("/");
+        DEntry start;
+        if(path[0].equals("")){
+            String[] temp = new String[path.length-1];
+            System.arraycopy(path,1,temp,0,path.length-1);
+            start = root;
+            path = temp;
+        }
+        else{
+            start = current;
+        }
 
-        int[] inode =  getUnusedNum(iNodeMap,1);
-        byteIO.setPos(superBlock.getiNodeSegOffset()+inode[0]*superBlock.getiNodeSize());
-        byteIO.writeBytes(data);
-        setMapBit(iNodeMap,inode[0],true);
+        for (String s : path) {
+            DEntry child = start.getChild(s);
+            if(s==null){
+                System.out.printf("not such a directory");
+                return null;
+            }
+            else {
+                start = child;
+            }
+        }
+        return start;
     }
 
-    public static void main(String[] args) throws IOException {
+    public DEntry newDir(String dirName,DEntry parent) throws IOException {
+        int[] inodeNum =  getUnusedNum(iNodeMap,1);
+        int[] blockNum = getUnusedNum(blockMap,1);
+        INode.initInode(VHDDir,dirName,0,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0]);
+        setMapBit(iNodeMap,inodeNum[0],true);
+        setMapBit(blockMap,blockNum[0],true);
+        INode iNode = new INode(superBlock,inodeNum[0]);
+        DEntry dEntry = new DEntry(this,parent,inodeNum[0],iNode);
+        parent.getChildren().add(dEntry);
+
+        return dEntry;
+    }
+
+    public DEntry newFile(String fileName,DEntry parent) throws IOException {
+        int[] inodeNum =  getUnusedNum(iNodeMap,1);
+        int[] blockNum = getUnusedNum(blockMap,1);
+        INode.initInode(VHDDir,fileName,1,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0]);
+        setMapBit(iNodeMap,inodeNum[0],true);
+        setMapBit(blockMap,blockNum[0],true);
+        INode iNode = new INode(superBlock,inodeNum[0]);
+        DEntry dEntry = new DEntry(this,parent,inodeNum[0],iNode);
+        parent.getChildren().add(dEntry);
+
+        return dEntry;
+    }
+
+    public static void main(String[] args) throws IOException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException, IllegalAccessException {
         FileSystem fileSystem = new FileSystem("src/cn/geralt/util/mydisk.vhd");
+        Shell shell = new Shell(fileSystem);
+        shell.run();
         System.out.println();
     }
 }
