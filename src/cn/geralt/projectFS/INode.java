@@ -52,11 +52,57 @@ public class INode {
         this.fileName = new String(buffer);
     }
 
-    private int[][] getOffSet(int off,int len){
+    private int[][] getOffSet(int off,int len) throws IOException {
+        int[][] a =new int[10][2];
+        int cout=0;
+        int size = (int)Math.floor((double)off/4092);//计算找到off需要跳过的块数
+        int shenyu = (int)Math.floor((double)off%4092);//找到块后的偏移
+        int nextBlockNum = this.firstBlock;
+        while (size > 0){
+            byte[] temp;
 
+            temp = FileSystem.getbytes(SBHandler.getDataSegOffset()+nextBlockNum* SBHandler.getBlockSize()
+                        , SBHandler.getBlockSize());
 
-        return null ;
+            nextBlockNum = ByteIO.byteArrayToInt(Arrays.copyOfRange(temp,temp.length-4,temp.length));
+            size--;
+        }//跳过off之前的块
+        byte[] temp;
+        temp = FileSystem.getbytes(SBHandler.getDataSegOffset()+nextBlockNum* SBHandler.getBlockSize()
+                    , SBHandler.getBlockSize());
+        a[cout][0]=SBHandler.getDataSegOffset()+nextBlockNum* SBHandler.getBlockSize()+shenyu;
+        //判断len和off是否在同一块中
+        if(len > (4092-shenyu)){
+            len = len -(4092-shenyu);
+            a[cout][1] = 4092+SBHandler.getDataSegOffset()+nextBlockNum* SBHandler.getBlockSize();
+            cout++;
+        }
+        else {
+            a[cout][1] = a[cout][0] + len;
+            return a;
+        }
+        nextBlockNum = ByteIO.byteArrayToInt(Arrays.copyOfRange(temp,temp.length-4,temp.length));
+        size = (int)Math.floor((double)len/4092);//用于循坏获得off到len之间的地址
+        shenyu = (int)Math.floor((double)len%4092);//找到len所在的偏移
+
+        while(size>0){
+            try {
+                temp = FileSystem.getbytes(SBHandler.getDataSegOffset()+nextBlockNum* SBHandler.getBlockSize()
+                        , SBHandler.getBlockSize());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            a[cout][0]=SBHandler.getDataSegOffset()+nextBlockNum* SBHandler.getBlockSize();
+            a[cout][1]=a[cout][0]+4092;
+            cout++;
+            nextBlockNum = ByteIO.byteArrayToInt(Arrays.copyOfRange(temp,temp.length-4,temp.length));
+            size--;
+        }
+        a[cout][0]=SBHandler.getDataSegOffset()+nextBlockNum* SBHandler.getBlockSize();
+        a[cout][1]=a[cout][0]+shenyu;
+        return a ;
     }
+
 
     public byte[] read() throws IOException {
         byte[] buffer = new byte[rawFileLen];
@@ -177,5 +223,20 @@ public class INode {
             return ans;
         }
 
+    }
+
+    public static void initInode(String VHDDir,String dirName,int type,int off,int firstBlock) throws IOException {
+        ByteIO byteIO = new ByteIO(VHDDir);
+        byte[] name = dirName.getBytes();
+        byte[] data = new byte[11+name.length];
+        data[0] = (byte)type ; //type
+        data[1] = 0x0; //status
+        System.arraycopy(ByteIO.intToByteArray(firstBlock),0,data,2,4); //first block num
+        System.arraycopy(ByteIO.intToByteArray(1),0,data,6,4); //rawFileLen
+        data[10] = (byte)name.length; //filename len
+        System.arraycopy(dirName.getBytes(),0,data,11,dirName.length());
+
+        byteIO.setPos(off);
+        byteIO.writeBytes(data);
     }
 }
