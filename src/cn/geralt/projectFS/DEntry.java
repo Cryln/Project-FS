@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class DEntry {
     private DEntry parent;
-    private ArrayList<DEntry> children;
+    private ArrayList<DEntry> children = new ArrayList<>();
     private int iNodeNum;
     private INode iNode;
 //    private byte[] rawFile;
@@ -41,10 +41,13 @@ public class DEntry {
 
     public DEntry(FileSystem fileSystem, DEntry parent, int iNodeNum, INode iNode) throws IOException {
         this.FSHandler  = fileSystem;
-        this.parent = parent;
+        if(parent==null)
+            this.parent = this;
+        else this.parent = parent;
         this.iNodeNum = iNodeNum;
         this.iNode = iNode;
         this.fileName = this.iNode.getFileName();
+//        children.add()
     }
     public byte[] read() throws IOException {
         //TODO: open file
@@ -79,6 +82,12 @@ public class DEntry {
     }
 
     public DEntry getChild(String childName){
+        if(childName.equals("..")){
+            return parent;
+        }
+        else if(childName.equals(".")){
+            return this;
+        }
         for (DEntry child : children) {
             if(child.getFileName().equals(childName)){
                 return child;
@@ -95,16 +104,4 @@ public class DEntry {
         return false;
     }
 
-    public static DEntry getInstance(String dir,DEntry cur){
-        String[] path = dir.split("/");
-        for (String s : path) {
-            if(cur.isChildExist(s)){
-                cur = cur.getChild(s);
-            }
-            else{
-                return null;
-            }
-        }
-        return cur;
-    }
 }
