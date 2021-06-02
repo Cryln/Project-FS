@@ -2,15 +2,13 @@ package cn.geralt.cmd;
 
 import cn.geralt.projectFS.FileSystem;
 
-public class Cmd_pwd implements Executable{
-    private FileSystem FSHandler;
-
+public class Cmd_pwd extends Executable{
     public Cmd_pwd(FileSystem FSHandler) {
-        this.FSHandler = FSHandler;
+        super(FSHandler);
     }
 
     @Override
-    public int run() {
+    public int run(String[] args) {
 
         System.out.println();
         return 1;
