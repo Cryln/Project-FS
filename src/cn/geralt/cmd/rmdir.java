@@ -5,8 +5,8 @@ import cn.geralt.projectFS.FileSystem;
 
 import java.io.IOException;
 
-public class cd extends Executable{
-    public cd(FileSystem fileSystem) {
+public class rmdir extends Executable{
+    public rmdir(FileSystem fileSystem) {
         super(fileSystem);
     }
 
@@ -15,10 +15,11 @@ public class cd extends Executable{
         DEntry des = getFSHandler().dir2DEntry(args[0]);
         if(des==null){
             return -1;
-        }else {
+        }else{
             des.openDir();
-            getFSHandler().setCurrent(des);
+            getFSHandler().delete(des);
         }
+
         return 0;
     }
 }

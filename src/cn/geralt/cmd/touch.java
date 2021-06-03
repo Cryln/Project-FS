@@ -5,8 +5,8 @@ import cn.geralt.projectFS.FileSystem;
 
 import java.io.IOException;
 
-public class mkdir extends Executable{
-    public mkdir(FileSystem fileSystem){
+public class touch extends Executable{
+    public touch(FileSystem fileSystem) {
         super(fileSystem);
     }
 
@@ -14,11 +14,10 @@ public class mkdir extends Executable{
     public int run(String[] args){
         DEntry cur = getFSHandler().getCurrent();
         try {
-            getFSHandler().newDir(args[0],cur);
+            getFSHandler().newFile(args[0],cur);
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return 0;
     }
 }
