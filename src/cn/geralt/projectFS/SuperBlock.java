@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 
 public class SuperBlock {
     private FileSystem FSHandler;
@@ -34,8 +35,17 @@ public class SuperBlock {
     private int iNodeMapOffset;
     private int blockMapOffset;
 
-    public SuperBlock(FileSystem FSHandler) {
+    public int getiNodeMapOffset() {
+        return iNodeMapOffset;
+    }
+
+    public int getBlockMapOffset() {
+        return blockMapOffset;
+    }
+
+    public SuperBlock(FileSystem FSHandler) throws IOException {
         this.FSHandler = FSHandler;
+        initialize();
     }
 
     public SuperBlock getNextSuperBlock() {
@@ -135,9 +145,10 @@ public class SuperBlock {
     }
 
     private void initialize() throws IOException {
-        //TODO: 2.
-        String dir = FSHandler.getVHDDir();
-        ByteIO byteIO = new ByteIO(dir);
+
+//        String dir = FSHandler.getVHDDir();
+        ByteIO byteIO = ByteIO.getInstance();
+        byteIO.setPos(0);
         magic = byteIO.nextInt();
         superBlockLen = byteIO.nextInt();
         partitionSize = byteIO.nextInt();
@@ -154,8 +165,9 @@ public class SuperBlock {
     }
 
     public void format(int[] ints) throws IOException {
-        String dir = FSHandler.getVHDDir();
-        ByteIO byteIO = new ByteIO(dir);
+//        String dir = FSHandler.getVHDDir();
+        ByteIO byteIO = ByteIO.getInstance();
+        byteIO.setPos(0);
         byteIO.writeInt(ints[0]); //magic 31415926
         byteIO.writeInt(ints[1]); //superBlockLen  4096
         byteIO.writeInt(ints[2]); //partitionSize  16*1024*124
@@ -183,15 +195,23 @@ public class SuperBlock {
         byteIO.setPos(ints[11]);
         byteIO.writeBytes(new byte[]{-128});
 
-        byteIO.setPos(ints[1]+ints[3]*ints[9]); //root iNode offset
-        byte[] data = new byte[11];
+
+//        byte[] data = new byte[11];
+        byte[] data = new byte[27];
+
+        Date date = new Date();
         data[0] = 0x0; //type
         data[1] = 0x0; //status
-        System.arraycopy(ByteIO.intToByteArray(0),0,data,2,4); //first block num
-        System.arraycopy(ByteIO.intToByteArray(1),0,data,6,4); //rawFileLen
-        data[10] = 0x0; //filename len
-        System.arraycopy(new String("").getBytes(),0,data,11,0);
+        data[3] = 0x0; //nameLen
 
+        System.arraycopy(ByteIO.intToByteArray(0),0,data,3,4); //first block num
+        System.arraycopy(ByteIO.intToByteArray(4),0,data,7,4); //rawFileLen
+        System.arraycopy(ByteIO.intToByteArray(0),0,data,11,4); //uid
+        System.arraycopy(ByteIO.intToByteArray(0),0,data,15,4); //mode
+        System.arraycopy(ByteIO.longToByteArray(date.getTime()),0,data,19,8); //time
+//        System.arraycopy(name,0,data,27,name.length);
+
+        byteIO.setPos(ints[1]+ints[3]*ints[9]); //root iNode offset
         byteIO.writeBytes(data);
 
         byteIO.setPos(ints[7]); //dataSegOffset
@@ -201,7 +221,7 @@ public class SuperBlock {
     }
 
     public void load() throws FileNotFoundException {
-        ByteIO byteIO = new ByteIO("D:\\Codes\\java\\Project-FS\\src\\cn\\geralt\\util\\mydisk.vhd");
+        ByteIO byteIO = ByteIO.getInstance();
 
     }
     public void save() throws IOException {
@@ -209,18 +229,18 @@ public class SuperBlock {
     }
 
     public byte[] getINodeMap() throws IOException {
-        String dir = FSHandler.getVHDDir();
-        ByteIO byteIO = new ByteIO(dir);
+//        String dir = FSHandler.getVHDDir();
+        ByteIO byteIO = ByteIO.getInstance();
         return byteIO.output(iNodeMapOffset,4096/8);
     }
     public byte[] getBlockMap() throws IOException {
-        String dir = FSHandler.getVHDDir();
-        ByteIO byteIO = new ByteIO(dir);
+//        String dir = FSHandler.getVHDDir();
+        ByteIO byteIO = ByteIO.getInstance();
         return byteIO.output(blockMapOffset,4096/8);
     }
 
     public static void main(String[] args) throws IOException {
-        ByteIO byteIO = new ByteIO("temp/text.txt");
+//        ByteIO byteIO = new ByteIO("temp/text.txt");
 //        File myfile0 = new File("temp/1/2");
 //        if(!myfile0.exists()){
 //            myfile0.mkdirs();
@@ -229,7 +249,7 @@ public class SuperBlock {
         System.out.println(myfile.exists());
         FileInputStream fileInputStream = new FileInputStream(myfile);
         byte[] bytes = fileInputStream.readAllBytes();
-        byteIO.input(bytes,0);
+//        byteIO.input(bytes,0);
 
     }
 }

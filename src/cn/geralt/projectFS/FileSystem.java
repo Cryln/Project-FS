@@ -5,12 +5,10 @@ import cn.geralt.util.ByteIO;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class FileSystem {
-    private String VHDDir;
+//    private String VHDDir;
     private SuperBlock superBlock;
     private boolean isInitialized;
     private DEntry root;
@@ -18,11 +16,10 @@ public class FileSystem {
     private Map<Integer,MyFile> files = new HashMap<>();
     private byte[] iNodeMap;
     private byte[] blockMap;
-    private Stack<DEntry> path = new Stack<>();
 
-    public String getVHDDir() {
-        return VHDDir;
-    }
+//    public String getVHDDir() {
+//        return VHDDir;
+//    }
 
     public DEntry getCurrent() {
         return current;
@@ -30,6 +27,11 @@ public class FileSystem {
 
     public void setCurrent(DEntry current) {
         this.current = current;
+    }
+
+    public String getAbsPath() {
+        if(current==null) return "";
+        return current.getAbsPath();
     }
 
     public SuperBlock getSuperBlock() {
@@ -44,11 +46,11 @@ public class FileSystem {
         return files;
     }
 
-    public FileSystem(String VHDDir) throws IOException {
-        this.VHDDir = VHDDir;
+    public FileSystem() throws IOException {
+//        this.VHDDir = VHDDir;
         current = null;
         superBlock = new SuperBlock(this);
-        boolean checked = diskCheck(this.VHDDir);
+        boolean checked = diskCheck();
         if(checked){
             this.isInitialized = initialize();
         }
@@ -57,20 +59,24 @@ public class FileSystem {
             this.isInitialized = initialize();
         }
     }
-    private boolean diskCheck(String dir){
+    private boolean diskCheck() throws IOException {
         //TODO: disk check
-
-        return false;
+        ByteIO byteIO = ByteIO.getInstance();
+        byteIO.setPos(0);
+        if(byteIO.nextInt()!=31415926){
+            return false;
+        }
+        else
+            return true;
     }
     private boolean initialize() throws IOException {
-        //TODO: 1.initialize the super block
+
 
         root = new DEntry(this,null,superBlock.getRootINode(),getINode(superBlock.getRootINode()));
 
         iNodeMap = superBlock.getINodeMap();
         blockMap = superBlock.getBlockMap();
 
-        current = root;
         System.out.println("root:"+root.getFileName());
         return true;
     }
@@ -93,7 +99,7 @@ public class FileSystem {
         return null;
     }
 
-    public void setMapBit(byte[] bytes,int pos,boolean bit){
+    public void setMapBit(byte[] bytes,int pos,boolean bit) throws IOException {
         int a = pos/8;
         int b = pos%8;
         byte temp = bytes[a];
@@ -105,6 +111,12 @@ public class FileSystem {
             temp = (byte) (temp ^ mask);
             bytes[a] = temp;
         }
+        byte[] data = new byte[iNodeMap.length+ blockMap.length];
+        System.arraycopy(iNodeMap,0,data,0,iNodeMap.length);
+        System.arraycopy(blockMap,0,data,iNodeMap.length,blockMap.length);
+        ByteIO byteIO = ByteIO.getInstance();
+        byteIO.input(data,superBlock.getiNodeMapOffset());
+
     }
 //
 //    public boolean isDirExist(String relDir, DEntry cur){
@@ -137,13 +149,13 @@ public class FileSystem {
         }
         else{
             int fd = getFD();
-            MyFile myFile = MyFile.getInstance(temp,fd);
+            MyFile myFile = new MyFile(temp,fd);
             files.put(fd,myFile);
             return fd;
         }
     }
 
-    private int close(int fd){
+    public int close(int fd){
         files.remove(fd);
         return 1;
     }
@@ -192,26 +204,30 @@ public class FileSystem {
     }
 
     public static byte[] getbytes(int offset, int len) throws IOException {
-        ByteIO byteIO = new ByteIO("src/cn/geralt/util/mydisk.vhd");
+        ByteIO byteIO = ByteIO.getInstance();
         return byteIO.output(offset,len);
     }
 
     public DEntry dir2DEntry(String dir){
         String[] path = dir.strip().split("/");
-        DEntry start;
-        if(path[0].equals("")){
-            String[] temp = new String[path.length-1];
-            System.arraycopy(path,1,temp,0,path.length-1);
-            start = root;
-            path = temp;
+        DEntry start = null;
+        int index = 0;
+        if(path.length==0){
+            return root;
         }
         else{
-            start = current;
+            switch (path[0]) {
+                case "": start=root; index=1;break;
+                case ".": start=current; index=1;break;
+                case "..": start=current.getParent(); index=1;break;
+                default: start = current;break;
+            }
+
         }
 
-        for (String s : path) {
-            DEntry child = start.getChild(s);
-            if(s==null){
+        for (;index<path.length;index++) {
+            DEntry child = start.getChild(path[index]);
+            if(path[index]==null){
                 System.out.printf("not such a directory");
                 return null;
             }
@@ -225,12 +241,33 @@ public class FileSystem {
     public DEntry newDir(String dirName,DEntry parent) throws IOException {
         int[] inodeNum =  getUnusedNum(iNodeMap,1);
         int[] blockNum = getUnusedNum(blockMap,1);
-        INode.initInode(VHDDir,dirName,0,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0]);
+        INode.initInode(dirName,0,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0]);
+        //initialize the block
+        ByteIO byteIO = ByteIO.getInstance();
+        byteIO.setPos(blockNum[0]*superBlock.getBlockSize()+superBlock.getDataSegOffset());
+        byteIO.writeInt(0);
+
         setMapBit(iNodeMap,inodeNum[0],true);
         setMapBit(blockMap,blockNum[0],true);
         INode iNode = new INode(superBlock,inodeNum[0]);
         DEntry dEntry = new DEntry(this,parent,inodeNum[0],iNode);
         parent.getChildren().add(dEntry);
+        //new child need to be write in dir block
+        int fd = open("../"+ parent.getFileName());
+//        byte[] data = ByteIO.intToByteArray(parent.getChildren().size());
+//        write(fd,data,0);
+//        data = ByteIO.intToByteArray(inodeNum[0]);
+//        write(fd,data,parent.getiNode().getRawFileLen());
+        byte[] temp = parent.getiNode().read();
+        byte[] data = new byte[temp.length+4];
+        System.arraycopy(temp,0,data,0,temp.length);
+        temp = ByteIO.intToByteArray(parent.getChildren().size());
+        System.arraycopy(temp,0,data,0,temp.length);
+        temp = ByteIO.intToByteArray(inodeNum[0]);
+        System.arraycopy(temp,0,data,data.length-4,4);
+        write(fd,data,0);
+
+        close(fd);
 
         return dEntry;
     }
@@ -238,18 +275,66 @@ public class FileSystem {
     public DEntry newFile(String fileName,DEntry parent) throws IOException {
         int[] inodeNum =  getUnusedNum(iNodeMap,1);
         int[] blockNum = getUnusedNum(blockMap,1);
-        INode.initInode(VHDDir,fileName,1,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0]);
+        INode.initInode(fileName,1,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0]);
+        //initialize the block
+        ByteIO byteIO = ByteIO.getInstance();
+        byteIO.setPos(blockNum[0]*superBlock.getBlockSize()+superBlock.getDataSegOffset());
+        byteIO.writeInt(0);
+
         setMapBit(iNodeMap,inodeNum[0],true);
         setMapBit(blockMap,blockNum[0],true);
         INode iNode = new INode(superBlock,inodeNum[0]);
         DEntry dEntry = new DEntry(this,parent,inodeNum[0],iNode);
         parent.getChildren().add(dEntry);
+        //new child need to be write in dir block
+        int fd = open("../"+ parent.getFileName());
+//        byte[] data = ByteIO.intToByteArray(parent.getChildren().size());
+//        write(fd,data,0);
+//        data = ByteIO.intToByteArray(inodeNum[0]);
+//        write(fd,data,parent.getiNode().getRawFileLen());
+        byte[] temp =parent.getiNode().read();
+        byte[] data = new byte[temp.length+4];
+        System.arraycopy(temp,0,data,0,temp.length);
+        temp = ByteIO.intToByteArray(parent.getChildren().size());
+        System.arraycopy(temp,0,data,0,temp.length);
+        temp = ByteIO.intToByteArray(inodeNum[0]);
+        System.arraycopy(temp,0,data,data.length-4,4);
+        write(fd,data,0);
+
+        close(fd);
 
         return dEntry;
     }
 
+    public void delete(DEntry dEntry) throws IOException {
+        List<ArrayList<Integer>> ans = dEntry.delete();
+        for (Integer integer : ans.get(0)) {
+            setMapBit(iNodeMap,integer,false);
+        }
+        for (Integer integer : ans.get(1)) {
+            setMapBit(blockMap,integer,false);
+        }
+        DEntry parent = dEntry.getParent();
+        parent.getChildren().remove(dEntry);
+
+        int fd = open("../"+ dEntry.getParent().getFileName());
+        int index = 0;
+        byte[] data = new byte[parent.getChildren().size()*4+4];
+        byte[] temp = ByteIO.intToByteArray(parent.getChildren().size());
+        System.arraycopy(temp,0,data,index,temp.length);
+        index += 4;
+        for (DEntry child : parent.getChildren()) {
+            temp = ByteIO.intToByteArray(child.getiNodeNum());
+            System.arraycopy(temp,0,data,index,temp.length);
+            index += 4;
+        }
+        write(fd,data,0);
+
+        close(fd);
+    }
+
     public static void main(String[] args) throws IOException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-        FileSystem fileSystem = new FileSystem("src/cn/geralt/util/mydisk.vhd");
+        FileSystem fileSystem = new FileSystem();
         Shell shell = new Shell(fileSystem);
         shell.run();
         System.out.println();

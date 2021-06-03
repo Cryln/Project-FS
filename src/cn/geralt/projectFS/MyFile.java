@@ -9,38 +9,56 @@ import java.util.Date;
 public class MyFile {
     private int fd;
     private DEntry dEntry;
-//    private byte[] buffer;
+    private String name;
+    private int type;
+    private int status;
+    private int fileLen;
+    private int mode;
+    private int owner;
+    private long lastModifiedTime;
 
-//    public byte[] read() throws IOException {
-//        //用/temp 目录来模拟内存，直接将文件从VHD加载到/temp 返回路径
-////        buffer =  dEntry.openFile();
-//        String path = "temp"+dEntry.getPath();
-//        File pathFile = new File(path);
-//        if(!pathFile.exists()){
-//            pathFile.mkdirs();
-//        }
-//        String fileDir = path+dEntry.getFileName();
-//        File file = new File(fileDir);
-//        if(!file.exists()){
-//            file.createNewFile();
-//        }
-//        ByteIO byteIO = new ByteIO(fileDir);
-//        byteIO.input(dEntry.getiNode().getFile(),0);
-//        return fileDir;
-//    }
-    private MyFile(DEntry dEntry,int fd){
+    public MyFile(DEntry dEntry,int fd){
         this.dEntry = dEntry;
         this.fd = fd;
+        initialize();
     }
-    public static MyFile getInstance(DEntry dEntry,int fd){
-        return new MyFile(dEntry,fd);
+
+    private void initialize(){
+        name = dEntry.getFileName();
+        type = dEntry.getiNode().getType();
+        status = dEntry.getiNode().getStatus();
+        fileLen = dEntry.getiNode().getRawFileLen();
+        mode = dEntry.getiNode().getMode();
+        owner = dEntry.getiNode().getUid();
+        lastModifiedTime = dEntry.getiNode().getLastModifyTime();
     }
+
+    public String getName(){
+        return name;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public int getFileLen() {
+        return fileLen;
+    }
+    //    public static MyFile getInstance(DEntry dEntry,int fd){
+//        return new MyFile(dEntry,fd);
+//    }
 
     public byte[] read() throws IOException {
         return dEntry.read();
     }
 
     public int[] write(byte[] bytes,int off,int[] additons) throws IOException {
-        return dEntry.write(bytes,off,additons);
+        int[] ans = dEntry.write(bytes,off,additons);
+        initialize();
+        return ans;
     }
 }
