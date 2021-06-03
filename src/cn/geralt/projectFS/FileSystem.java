@@ -2,7 +2,6 @@ package cn.geralt.projectFS;
 
 import cn.geralt.util.ByteIO;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -16,10 +15,30 @@ public class FileSystem {
     private Map<Integer,MyFile> files = new HashMap<>();
     private byte[] iNodeMap;
     private byte[] blockMap;
+    private User currentUser;
+    private Map<String,Integer> user2uid;
+    private Map<Integer,String> uid2user=null;
 
 //    public String getVHDDir() {
 //        return VHDDir;
 //    }
+
+
+    public Map<String, Integer> getUser2uid() {
+        return user2uid;
+    }
+
+    public Map<Integer, String> getUid2user() {
+        return uid2user;
+    }
+
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    public void setCurrentUser(User currentUser) {
+        this.currentUser = currentUser;
+    }
 
     public DEntry getCurrent() {
         return current;
@@ -71,14 +90,29 @@ public class FileSystem {
     }
     private boolean initialize() throws IOException {
 
-
+        user2uid = superBlock.getUsers();
+        uid2user = new HashMap<>();
+        for (String s : user2uid.keySet()) {
+            int uid = user2uid.get(s);
+            uid2user.put(uid,s);
+        }
+        currentUser = new User(this);
+        currentUser.login();
+        if(!currentUser.isLoggedIn()){
+            currentUser.signUp();
+            return initialize();
+        }
         root = new DEntry(this,null,superBlock.getRootINode(),getINode(superBlock.getRootINode()));
-
+        current =root;
         iNodeMap = superBlock.getINodeMap();
         blockMap = superBlock.getBlockMap();
 
-        System.out.println("root:"+root.getFileName());
+//        System.out.println("root:"+root.getFileName());
         return true;
+    }
+
+    public void saveUsers() throws IOException {
+        superBlock.saveUsers();
     }
 
     public int[] getUnusedNum(byte[] bytes,int amount){
@@ -194,7 +228,7 @@ public class FileSystem {
     }
 
     private void format() throws IOException {
-        int[] ints = {31415926,4096,16*1024*1024,256,4096,4096,4096,1052672,3837,0,48,560};
+        int[] ints = {31415926,4096,16*1024*1024,256,4096,4096,4096,1052672,3837,0,52,564,1076};
         superBlock.format(ints);
         System.out.println("formatted!");
     }
@@ -239,9 +273,16 @@ public class FileSystem {
     }
 
     public DEntry newDir(String dirName,DEntry parent) throws IOException {
+        for (DEntry child : parent.getChildren()) {
+            if (dirName.equals(child.getFileName())){
+                System.out.println(dirName+" already exists!");
+                return null;
+            }
+        }
+
         int[] inodeNum =  getUnusedNum(iNodeMap,1);
         int[] blockNum = getUnusedNum(blockMap,1);
-        INode.initInode(dirName,0,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0]);
+        INode.initInode(dirName,0,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0],currentUser);
         //initialize the block
         ByteIO byteIO = ByteIO.getInstance();
         byteIO.setPos(blockNum[0]*superBlock.getBlockSize()+superBlock.getDataSegOffset());
@@ -273,9 +314,15 @@ public class FileSystem {
     }
 
     public DEntry newFile(String fileName,DEntry parent) throws IOException {
+        for (DEntry child : parent.getChildren()) {
+            if (fileName.equals(child.getFileName())){
+                System.out.println(fileName+" already exists!");
+                return null;
+            }
+        }
         int[] inodeNum =  getUnusedNum(iNodeMap,1);
         int[] blockNum = getUnusedNum(blockMap,1);
-        INode.initInode(fileName,1,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0]);
+        INode.initInode(fileName,1,superBlock.getiNodeSegOffset()+inodeNum[0]*superBlock.getiNodeSize(),blockNum[0],currentUser);
         //initialize the block
         ByteIO byteIO = ByteIO.getInstance();
         byteIO.setPos(blockNum[0]*superBlock.getBlockSize()+superBlock.getDataSegOffset());

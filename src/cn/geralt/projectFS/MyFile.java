@@ -11,7 +11,7 @@ public class MyFile {
     private DEntry dEntry;
     private String name;
     private int type;
-    private int status;
+    private int status; //version
     private int fileLen;
     private int mode;
     private int owner;
@@ -31,6 +31,18 @@ public class MyFile {
         mode = dEntry.getiNode().getMode();
         owner = dEntry.getiNode().getUid();
         lastModifiedTime = dEntry.getiNode().getLastModifyTime();
+    }
+
+    public int getMode() {
+        return mode;
+    }
+
+    public int getOwner() {
+        return owner;
+    }
+
+    public long getLastModifiedTime() {
+        return lastModifiedTime;
     }
 
     public String getName(){

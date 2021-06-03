@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Scanner;
-import java.util.Stack;
 
 public class Shell {
     private FileSystem fileSystem;
@@ -31,7 +30,13 @@ public class Shell {
             String[] cmd = line.split("\\s+");
             if(cmd.length==0)
                 break;
-            Class clazz = Class.forName("cn.geralt.cmd."+cmd[0]);
+            Class clazz = null;
+            try {
+                clazz = Class.forName("cn.geralt.cmd." + cmd[0]);
+            }catch (ClassNotFoundException e){
+                System.out.println("no such a cmd!");
+                break;
+            }
             Executable exec = (Executable)clazz.getConstructor(FileSystem.class).newInstance(this.fileSystem);
             exec.run(Arrays.copyOfRange(cmd,1,cmd.length));
             System.out.println();

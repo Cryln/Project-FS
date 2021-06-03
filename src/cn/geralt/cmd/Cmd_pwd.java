@@ -8,7 +8,7 @@ public class Cmd_pwd extends Executable{
     }
 
     @Override
-    public int run(String[] args) {
+    public int process(String[] args) {
 
         System.out.println();
         return 1;

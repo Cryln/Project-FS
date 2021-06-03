@@ -9,10 +9,11 @@ import java.util.Stack;
 public class pwd extends Executable{
     public pwd(FileSystem fileSystem) {
         super(fileSystem);
+        permission = 0;
     }
 
     @Override
-    public int run(String[] args) throws IOException {
+    public int process(String[] args) throws IOException {
 
         System.out.print(getFSHandler().getAbsPath()+"\n");
 

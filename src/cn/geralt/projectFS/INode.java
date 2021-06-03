@@ -63,6 +63,18 @@ public class INode {
         return mode;
     }
 
+    public void setStatus(byte status) {
+        this.status = status;
+    }
+
+    public void setLastModifyTime(long lastModifyTime) {
+        this.lastModifyTime = lastModifyTime;
+    }
+
+    public void setMode(int mode) {
+        this.mode = mode;
+    }
+
     private void initialize() throws IOException {
 //        byte[] bytes = FileSystem.getbytes(SBHandler.getiNodeSegOffset()+iNodeNum* SBHandler.getiNodeSize()
 //                ,SBHandler.getiNodeSize());
@@ -320,16 +332,21 @@ public class INode {
 
     }
 
-    public static void initInode(String dirName,int type,int off,int firstBlock) throws IOException {
+    public static void initInode(String dirName,int type,int off,int firstBlock,User owner) throws IOException {
         ByteIO byteIO = ByteIO.getInstance();
         byte[] name = dirName.getBytes();
 //        byte[] data = new byte[11+name.length];
         byte[] data = new byte[27+name.length];
 
         int fileLen = 0;
+        int mode = 0777;
         switch (type) {
-            case 0: fileLen = 4;break;
-            case 1: fileLen = 0;break;
+            case 0: fileLen = 4;
+            mode = 0755;
+            break;
+            case 1: fileLen = 0;
+            mode = 0644;
+            break;
         }
         Date date = new Date();
 
@@ -343,8 +360,8 @@ public class INode {
         data[2] = (byte)name.length;
         System.arraycopy(ByteIO.intToByteArray(firstBlock),0,data,3,4); //first block num
         System.arraycopy(ByteIO.intToByteArray(fileLen),0,data,7,4); //rawFileLen
-        System.arraycopy(ByteIO.intToByteArray(0),0,data,11,4); //uid
-        System.arraycopy(ByteIO.intToByteArray(0),0,data,15,4); //mode
+        System.arraycopy(ByteIO.intToByteArray(owner.getUid()),0,data,11,4); //uid
+        System.arraycopy(ByteIO.intToByteArray(mode),0,data,15,4); //mode
         System.arraycopy(ByteIO.longToByteArray(date.getTime()),0,data,19,8); //time
         System.arraycopy(name,0,data,27,name.length);
 

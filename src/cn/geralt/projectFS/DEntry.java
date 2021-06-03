@@ -5,6 +5,7 @@ import cn.geralt.util.ByteIO;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 public class DEntry {
@@ -80,6 +81,8 @@ public class DEntry {
 
     public int[] write(byte[] bytes,int off,int[] additions) throws IOException {
         int[] ans = iNode.write(bytes,off,additions);
+        Date date = new Date();
+        iNode.setLastModifyTime(date.getTime());
         iNode.update();
         return ans;
     }
