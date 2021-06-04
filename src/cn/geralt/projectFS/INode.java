@@ -44,6 +44,19 @@ public class INode {
         return status;
     }
 
+    public byte getRealStatus() throws IOException {
+        ByteIO byteIO = ByteIO.getInstance();
+        byteIO.setPos(SBHandler.getiNodeSegOffset()+SBHandler.getiNodeSize()*iNodeNum+1);
+        return byteIO.nextByte();
+    }
+
+    public void setRealStatus(byte b) throws IOException {
+        ByteIO byteIO = ByteIO.getInstance();
+        byteIO.setPos(SBHandler.getiNodeSegOffset()+SBHandler.getiNodeSize()*iNodeNum+1);
+        byteIO.writeBytes(new byte[]{b});
+        setStatus(b);
+    }
+
     public int getRawFileLen() {
         return rawFileLen;
     }

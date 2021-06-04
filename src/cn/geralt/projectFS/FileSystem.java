@@ -88,7 +88,7 @@ public class FileSystem {
         else
             return true;
     }
-    private boolean initialize() throws IOException {
+    public boolean initialize() throws IOException {
 
         user2uid = superBlock.getUsers();
         uid2user = new HashMap<>();
@@ -222,6 +222,9 @@ public class FileSystem {
                     for (int i = 1; i < res.length; i++) {
                         setMapBit(blockMap, res[i], false);
                     }
+                    return;
+                case -1:
+                    System.out.println("error occurred during writing!");
                     return;
             }
         }

@@ -69,8 +69,19 @@ public class MyFile {
     }
 
     public int[] write(byte[] bytes,int off,int[] additons) throws IOException {
-        int[] ans = dEntry.write(bytes,off,additons);
-        initialize();
-        return ans;
+        byte cur = dEntry.getiNode().getRealStatus();
+        if((cur&(byte)0b10000000)!=0){
+            System.out.println("file busy!");
+            return new int[]{-1};
+        }else if((cur&(byte)0b01111111)!=(status&(byte)0b01111111)){
+            System.out.println("file has been modified!");
+            return new int[]{-1};
+        }else{
+            dEntry.getiNode().setRealStatus((byte)((cur)|(byte)0b10000000)); //status[7] set 1
+            int[] ans = dEntry.write(bytes,off,additons);
+            dEntry.getiNode().setRealStatus((byte)((cur+1)&(byte)0b01111111));//status[7] set 0, status[6-0]++
+            initialize();
+            return ans;
+        }
     }
 }
