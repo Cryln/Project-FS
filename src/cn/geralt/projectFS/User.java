@@ -33,6 +33,10 @@ public class User {
         return uid;
     }
 
+    public String getUserName() {
+        return userName;
+    }
+
     public boolean canRead(MyFile file){ //r2 w1 x0
         int ans = (file.getMode()>>(identify(file)+2));
         return (ans&1)==1;

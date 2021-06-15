@@ -7,7 +7,11 @@ import java.io.IOException;
 
 public abstract class Executable {
     protected FileSystem FSHandler;
-    protected int permission=0;
+    protected int permission0 =0;
+    protected int permission1 =0;
+
+    protected int type0;
+    protected int type1;
 
     protected FileSystem getFSHandler(){
         return this.FSHandler;
@@ -47,8 +51,16 @@ public abstract class Executable {
                     return 0;
             case 0:System.out.println("Permission denied!");
                 return -1;
-            case -1:System.out.println("no such a file!");
+            case -1:System.out.println("no such a src file!");
                 return -1;
+            case -2:
+                System.out.println("cmd not match the src type!");
+                return -1;
+            case -3:
+                System.out.println("cmd not match the dest type!");
+                return -1;
+            case -4:
+                System.out.println("no such a dest file");
         }
         return 0;
     }

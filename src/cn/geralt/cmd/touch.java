@@ -9,7 +9,7 @@ import java.io.IOException;
 public class touch extends Executable{
     public touch(FileSystem fileSystem) {
         super(fileSystem);
-        permission = 2;
+        permission0 = 2;
     }
 
     @Override
@@ -29,10 +29,10 @@ public class touch extends Executable{
         try {
             fd = getFSHandler().open(des.getAbsPath());
         }catch (NullPointerException e){
-            return -1;
+            return -4;
         }
         MyFile file = getFSHandler().getFiles().get(fd);
-        boolean ans = getFSHandler().getCurrentUser().access(file,permission);
+        boolean ans = getFSHandler().getCurrentUser().access(file, permission0);
         getFSHandler().close(fd);
         return ans?1:0;
     }

@@ -121,7 +121,7 @@ public class ByteIO {
 
     public static ByteIO getInstance() throws FileNotFoundException {
         if(byteIO==null){
-            byteIO = new ByteIO("src/cn/geralt/util/mydisk.vhd");
+            byteIO = new ByteIO("D:\\Codes\\java\\Project-FS\\src\\cn\\geralt\\util\\mydisk.vhd");
         }
         return byteIO;
     }

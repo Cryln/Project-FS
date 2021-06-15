@@ -25,7 +25,7 @@ public class Shell {
 
     public void run() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException, ClassNotFoundException, IOException {
         while (true){
-            System.out.print(getFileSystem().getAbsPath()+">");
+            System.out.print(fileSystem.getCurrentUser().getUserName()+"@"+getFileSystem().getAbsPath()+">");
             String line = scanner.nextLine().strip();
             String[] cmd = line.split("\\s+");
             if(cmd.length==0)
@@ -39,7 +39,7 @@ public class Shell {
             }
             Executable exec = (Executable)clazz.getConstructor(FileSystem.class).newInstance(this.fileSystem);
             exec.run(Arrays.copyOfRange(cmd,1,cmd.length));
-            System.out.println();
+//            System.out.println();
         }
     }
 }

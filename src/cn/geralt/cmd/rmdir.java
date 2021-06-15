@@ -9,6 +9,8 @@ import java.io.IOException;
 public class rmdir extends Executable{
     public rmdir(FileSystem fileSystem) {
         super(fileSystem);
+        permission0 = 2;
+        permission1 = 2;
     }
 
     @Override
@@ -25,15 +27,20 @@ public class rmdir extends Executable{
     }
     @Override
     public int preProcess(String[] args) {
-        try{
-            DEntry des = getFSHandler().dir2DEntry(args[0]);
-            int fd = getFSHandler().open(des.getAbsPath());
-            MyFile file = getFSHandler().getFiles().get(fd);
-            boolean ans = getFSHandler().getCurrentUser().access(file,permission);
-            getFSHandler().close(fd);
-            return ans?1:0;
+
+        DEntry des = getFSHandler().dir2DEntry(args[0]);
+        int fd = 0;
+        try {
+            fd = getFSHandler().open(des.getAbsPath());
         }catch (NullPointerException e){
-            return 1;
+            return -4;
         }
+        MyFile file = getFSHandler().getFiles().get(fd);
+        boolean ans = getFSHandler().getCurrentUser().access(file, permission0);
+        getFSHandler().close(fd);
+
+
+        return ans?1:0;
+
     }
 }

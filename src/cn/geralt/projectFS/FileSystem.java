@@ -150,7 +150,6 @@ public class FileSystem {
         System.arraycopy(blockMap,0,data,iNodeMap.length,blockMap.length);
         ByteIO byteIO = ByteIO.getInstance();
         byteIO.input(data,superBlock.getiNodeMapOffset());
-
     }
 //
 //    public boolean isDirExist(String relDir, DEntry cur){
@@ -381,6 +380,20 @@ public class FileSystem {
         write(fd,data,0);
 
         close(fd);
+    }
+
+    public void copy(DEntry srcD,DEntry destD) throws IOException {
+        int src = open(srcD.getAbsPath());
+        int dest = open(destD.getAbsPath());
+
+        MyFile srcF = files.get(src);
+        MyFile destF = files.get(dest);
+        byte[] data = new byte[srcF.getFileLen()];
+        read(src,data,0,srcF.getFileLen());
+        write(dest,data,0);
+
+        close(src);
+        close(dest);
     }
 
     public static void main(String[] args) throws IOException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException, IllegalAccessException {

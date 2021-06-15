@@ -9,7 +9,8 @@ import java.io.IOException;
 public class cd extends Executable{
     public cd(FileSystem fileSystem) {
         super(fileSystem);
-        this.permission = 1;
+        this.permission0 = 1;
+        this.type0 = 0;
     }
 
     @Override
@@ -31,10 +32,14 @@ public class cd extends Executable{
         try {
             fd = getFSHandler().open(des.getAbsPath());
         }catch (NullPointerException e){
-            return -1;
+            return -4;
         }
+        if(des.getiNode().getType()!=type0){
+            return -3;
+        }
+
         MyFile file = getFSHandler().getFiles().get(fd);
-        boolean ans = getFSHandler().getCurrentUser().access(file,permission);
+        boolean ans = getFSHandler().getCurrentUser().access(file, permission0);
         getFSHandler().close(fd);
         return ans?1:0;
     }

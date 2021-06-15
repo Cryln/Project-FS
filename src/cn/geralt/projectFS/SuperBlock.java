@@ -26,7 +26,7 @@ public class SuperBlock {
     private int rootINode = 0;
 
     private int maxBytes; // 最大文件字节数
-    private int magic = 1415926; //魔数，用来标识文件系统
+    private int magic = 31415926; //魔数，用来标识文件系统
     private int iNodeSegOffset = 4096; //i节点区的起始地址，也是超级块的大小
     private int lenOfINodeSeg = (partitionSize /blockSize)*iNodeSize; //i节点区的长度
     private int dataSegOffset = iNodeSegOffset+lenOfINodeSeg; //数据区的起始地址

@@ -11,7 +11,8 @@ public class ls extends Executable{
 
     public ls(FileSystem fileSystem) {
         super(fileSystem);
-        permission = 4;
+        permission0 = 4;
+        type0 = 0;
     }
 
     @Override
@@ -43,7 +44,26 @@ public class ls extends Executable{
                     }
                     sb.append("|");
                 }
-                System.out.println(String.format("%s\t\t%s\t\t%s\t\t%s",child.getFileName(),user,sb,date));
+                int filesize = child.getiNode().getRawFileLen();
+                if(child.getiNode().getType()==0){
+                    System.out.print(String.format("\u001b[34m"));
+                    System.out.println(String.format("%s\t\t%s\t\t%s\t\t%d\t\t%s",child.getFileName(),user,sb,filesize/4-1,date));
+                }
+                else {
+                    StringBuilder fileLen = new StringBuilder();
+                    String[] tag = new String[]{"B","KB","MB","GB"};
+                    for (int i = 0; i < tag.length; i++) {
+                        if(filesize>1024){
+                            filesize /= 1024;
+                        }
+                        else {
+                            fileLen.append(filesize).append(tag[i]);
+                            break;
+                        }
+                    }
+                    System.out.println(String.format("%s\t\t%s\t\t%s\t\t%s\t\t%s", child.getFileName(), user, sb, fileLen, date));
+                }
+                System.out.print(String.format("\u001b[0m"));
             }
         }
         return 0;
@@ -58,10 +78,13 @@ public class ls extends Executable{
         try {
             fd = getFSHandler().open(des.getAbsPath());
         }catch (NullPointerException e){
-            return -1;
+            return -4;
+        }
+        if(des.getiNode().getType()!=type0){
+            return -3;
         }
         MyFile file = getFSHandler().getFiles().get(fd);
-        boolean ans = getFSHandler().getCurrentUser().access(file,permission);
+        boolean ans = getFSHandler().getCurrentUser().access(file, permission0);
         getFSHandler().close(fd);
         return ans?1:0;
     }

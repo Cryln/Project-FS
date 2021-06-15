@@ -10,9 +10,9 @@ public class chmod extends Executable{
     public chmod(FileSystem fileSystem) {
         super(fileSystem);
         if((fileSystem.getCurrentUser().getUid()&0xffff0000)==0){
-            this.permission = 0;
+            this.permission0 = 0;
         }else
-            this.permission = 7;
+            this.permission0 = 7;
     }
 
     @Override
@@ -33,10 +33,10 @@ public class chmod extends Executable{
         try {
             fd = getFSHandler().open(des.getAbsPath());
         }catch (NullPointerException e){
-            return -1;
+            return -4;
         }
         MyFile file = getFSHandler().getFiles().get(fd);
-        boolean ans = getFSHandler().getCurrentUser().access(file,permission);
+        boolean ans = getFSHandler().getCurrentUser().access(file, permission0);
         getFSHandler().close(fd);
         return ans?1:0;
     }

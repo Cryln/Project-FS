@@ -8,7 +8,7 @@ public class exit extends Executable{
 
     public exit(FileSystem fileSystem) {
         super(fileSystem);
-        this.permission = 0;
+        this.permission0 = 0;
     }
 
     @Override

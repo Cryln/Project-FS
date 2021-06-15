@@ -9,7 +9,7 @@ import java.io.IOException;
 public class mkdir extends Executable{
     public mkdir(FileSystem fileSystem){
         super(fileSystem);
-        this.permission = 2;
+        this.permission0 = 2;
     }
 
     @Override
@@ -30,10 +30,10 @@ public class mkdir extends Executable{
         try {
             fd = getFSHandler().open(des.getAbsPath());
         }catch (NullPointerException e){
-            return -1;
+            return -4;
         }
         MyFile file = getFSHandler().getFiles().get(fd);
-        boolean ans = getFSHandler().getCurrentUser().access(file,permission);
+        boolean ans = getFSHandler().getCurrentUser().access(file, permission0);
         getFSHandler().close(fd);
         return ans?1:0;
     }
